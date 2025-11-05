@@ -8,6 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -20,6 +21,9 @@ public class WebSecurityConfig {
     @Autowired
     private JWTAuthorizationFilter jwtAuthorizationFilter;
 
+    @Autowired
+    private UserDetailsService userDetailsService;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -29,14 +33,27 @@ public class WebSecurityConfig {
 
                 // Sin sesiones (JWT)
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
                 // Reglas de acceso
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir registro y login
+                        .requestMatchers("/","/home","/maquinaria/buscar","/css/**","/images/**").permitAll()
+                        .requestMatchers("/maquinaria/detalle/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
-                        // Todo lo demás requiere autenticación
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
+                )
+
+                // Login
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/home", true)
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/home")
+                        .permitAll()
                 )
 
                 // Agregar filtro JWT
