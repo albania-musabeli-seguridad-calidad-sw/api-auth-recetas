@@ -1,5 +1,6 @@
 package com.musabeli.apiagricola.auth.services;
 
+import com.musabeli.apiagricola.auth.dtos.UserResponse;
 import com.musabeli.apiagricola.auth.entities.User;
 import com.musabeli.apiagricola.auth.repository.UserRepository;
 import com.musabeli.apiagricola.auth.security.JWTAuthenticationConfig;
@@ -10,6 +11,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -64,5 +67,15 @@ public class UserService implements UserDetailsService {
     // encriptar
     public PasswordEncoder passwordEncoder() {
         return passwordEncoder;
+    }
+
+    public List<UserResponse> getAllUsers(){
+        return userRepository.findAll().stream()
+                .map(user -> new UserResponse(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail()
+                ))
+                .toList();
     }
 }
