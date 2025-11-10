@@ -28,9 +28,9 @@ docker compose up -d
 
 ## Endpoints para ambiente de desarrollo
 
-POST: Register Request: http://localhost:8080/api/auth/register
-POST: Login Request: http://localhost:8080/api/auth/login
-GET: All Users: http://localhost:8080/api/users
+* POST: Register Request: http://localhost:8080/api/auth/register
+* POST: Login Request: http://localhost:8080/api/auth/login
+* GET: All Users: http://localhost:8080/api/users
 
 ## Ejemplo de Request Body
 
