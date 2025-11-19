@@ -3,7 +3,6 @@ package com.musabeli.apiagricola.auth.security;
 import com.musabeli.apiagricola.auth.config.JwtConstants;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,8 +26,29 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+
+        System.out.println("=== JWT FILTER ACTIVADO ===");
+        System.out.println("URL solicitada: " + request.getMethod() + " " + request.getRequestURI());
+        System.out.println("Header Authorization: " + request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY));
+
+        String jwtToken = extractJwtFromRequest(request);
+        System.out.println("Token extraído: " + (jwtToken != null ? "SÍ" : "NO"));
+
+        if (jwtToken != null) {
+            boolean valido = validateToken(jwtToken);
+            System.out.println("Token válido: " + valido);
+            if (valido) {
+                String username = getUsernameFromToken(jwtToken);
+                System.out.println("Usuario autenticado: " + username);
+            }
+        } else {
+            System.out.println("No se encontró token en el header");
+        }
+        System.out.println("=====================================");
+
+
         try {
-            String jwtToken = extractJwtFromRequest(request);
+            //String jwtToken = extractJwtFromRequest(request);
 
             if (jwtToken != null && validateToken(jwtToken)) {
                 String username = getUsernameFromToken(jwtToken);

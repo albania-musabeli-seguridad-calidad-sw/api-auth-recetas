@@ -1,10 +1,13 @@
 package com.musabeli.apiagricola.auth.services;
 
 import com.musabeli.apiagricola.auth.dtos.UserResponse;
+import com.musabeli.apiagricola.auth.dtos.UserUpdateRequest;
 import com.musabeli.apiagricola.auth.entities.User;
 import com.musabeli.apiagricola.auth.repository.UserRepository;
 import com.musabeli.apiagricola.auth.security.JWTAuthenticationConfig;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -51,7 +54,8 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new RuntimeException("Contraseña incorrecta");
+            //throw new RuntimeException("Contraseña incorrecta");
+            throw new BadCredentialsException("Contreña incorrecta"); // es más especifica al caso
         }
 
         return jwtConfig.getJWTToken(username);
@@ -78,4 +82,48 @@ public class UserService implements UserDetailsService {
                 ))
                 .toList();
     }
+
+
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
+        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+    }
+
+
+    @Transactional
+    public UserResponse updateUser(Long id, UserUpdateRequest request, String currentUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // Seguridad: solo puede editar su propia cuenta
+        if (!user.getUsername().equals(currentUsername)) {
+            throw new RuntimeException("No tienes permiso para modificar este usuario");
+        }
+        
+        if (request.username() != null && !request.username().isBlank()) {
+            if (!request.username().equals(user.getUsername()) &&
+                    userRepository.existsByUsername(request.username())) {
+                throw new RuntimeException("El nombre de usuario ya está en uso");
+            }
+            user.setUsername(request.username().trim());
+        }
+        
+        if (request.email() != null && !request.email().isBlank()) {
+            if (!request.email().equals(user.getEmail()) &&
+                    userRepository.existsByEmail(request.email())) {
+                throw new RuntimeException("El email ya está registrado");
+            }
+            user.setEmail(request.email().trim());
+        }
+        
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.password()));
+        }
+        
+        user = userRepository.save(user);
+        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+    }
+
+
 }

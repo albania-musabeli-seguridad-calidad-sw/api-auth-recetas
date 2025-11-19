@@ -8,14 +8,4 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
-public class SecuredController {
-
-    @GetMapping("/greetings")
-    public String greetings(
-            @RequestParam(value = "name", defaultValue = "World") String name,
-            Authentication authentication) {
-
-        String username = authentication.getName();
-        return "Hello {" + name + "}, autenticado como: " + username;
-    }
-}
+public class SecuredController {}

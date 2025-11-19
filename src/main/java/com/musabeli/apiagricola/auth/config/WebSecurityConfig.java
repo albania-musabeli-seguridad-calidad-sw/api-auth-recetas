@@ -35,8 +35,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Permitir registro login y listar
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
-                        // Todo lo demás requiere autenticación
+                        .requestMatchers("/api/users/**").authenticated()
                         .anyRequest().authenticated()
                 )
 
