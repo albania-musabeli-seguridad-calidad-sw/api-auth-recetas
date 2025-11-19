@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -37,6 +38,17 @@ public class UserController {
         String currentUsername = authentication.getName();
         UserResponse updated = userService.updateUser(id, request, currentUsername);
         return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id, Authentication authentication) {
+
+        String currentUsername = authentication.getName();
+        userService.deleteUser(id, currentUsername);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Usuario eliminado correctamente")
+        );
     }
 
 }

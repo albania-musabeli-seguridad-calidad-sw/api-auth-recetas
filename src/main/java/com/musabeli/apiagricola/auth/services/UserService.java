@@ -126,4 +126,17 @@ public class UserService implements UserDetailsService {
     }
 
 
+    @Transactional
+    public void deleteUser(Long id, String currentUsername) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!user.getUsername().equals(currentUsername)) {
+            throw new RuntimeException("No tiene permiso para eliminar este usuario");
+        }
+
+        userRepository.delete(user);
+    }
+
+
 }
