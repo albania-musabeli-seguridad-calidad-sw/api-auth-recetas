@@ -23,6 +23,8 @@ import java.util.List;
 @Service
 public class UserService implements UserDetailsService {
 
+    private static final String MSG_USER_NOT_FOUND = "Usuario no encontrado";
+
     private final UserRepository userRepository;
     private final JWTAuthenticationConfig jwtConfig;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -59,7 +61,7 @@ public class UserService implements UserDetailsService {
 
     public String login(String username, String rawPassword) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException(MSG_USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             throw new BadCredentialsException("Contraseña incorrecta");
@@ -72,7 +74,7 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException(MSG_USER_NOT_FOUND + ": " + username));
     }
 
     // encriptar
@@ -93,7 +95,7 @@ public class UserService implements UserDetailsService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MSG_USER_NOT_FOUND + " con id: " + id));
         return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
     }
 
@@ -101,7 +103,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public UserResponse updateUser(Long id, UserUpdateRequest request, String currentUsername) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(MSG_USER_NOT_FOUND));
         
         // Seguridad: solo puede editar su propia cuenta
         if (!user.getUsername().equals(currentUsername)) {
@@ -136,7 +138,7 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(Long id, String currentUsername) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException(MSG_USER_NOT_FOUND));
 
         if (!user.getUsername().equals(currentUsername)) {
             throw new UnauthorizedActionException("No tiene permiso para eliminar este usuario");
