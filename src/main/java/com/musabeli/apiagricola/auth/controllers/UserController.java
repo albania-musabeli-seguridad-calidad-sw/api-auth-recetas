@@ -16,8 +16,14 @@ import java.util.Map;
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+//    @Autowired
+//    private UserService userService;
+
+    private final UserService userService;
+
+    public UserController(UserService userService){
+        this.userService = userService;
+    }
 
     @GetMapping
     public ResponseEntity<List<UserResponse>> getAllUsers(){

@@ -20,13 +20,24 @@ import java.util.List;
 @Service
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+//    @Autowired
+//    private UserRepository userRepository;
+//
+//    @Autowired
+//    private JWTAuthenticationConfig jwtConfig;
 
-    @Autowired
-    private JWTAuthenticationConfig jwtConfig;
+    private final UserRepository userRepository;
+    private final JWTAuthenticationConfig jwtConfig;
+    private final PasswordEncoder passwordEncoder;
 
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public UserService(UserRepository userRepository,
+                       JWTAuthenticationConfig jwtConfig) {
+        this.userRepository = userRepository;
+        this.jwtConfig = jwtConfig;
+        this.passwordEncoder = new BCryptPasswordEncoder();
+    }
+
 
     public String register(String username, String email, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
@@ -55,7 +66,7 @@ public class UserService implements UserDetailsService {
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
             //throw new RuntimeException("Contraseña incorrecta");
-            throw new BadCredentialsException("Contreña incorrecta"); // es más especifica al caso
+            throw new BadCredentialsException("Contraseña incorrecta"); // es más especifica al caso
         }
 
         return jwtConfig.getJWTToken(username);

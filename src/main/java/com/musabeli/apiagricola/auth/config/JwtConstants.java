@@ -29,4 +29,9 @@ public class JwtConstants {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    // clase para impedir que creen un objeto de esta clase
+    private JwtConstants() {
+        throw new UnsupportedOperationException("Esta clase no debe instanciarse");
+    }
+
 }
