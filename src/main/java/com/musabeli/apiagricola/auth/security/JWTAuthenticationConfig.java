@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Configuration
 public class JWTAuthenticationConfig {
@@ -22,7 +21,7 @@ public class JWTAuthenticationConfig {
         Map<String, Object> claims = new HashMap<>();
         claims.put("authorities", grantedAuthorities.stream()
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList()));
+                .toList());
 
         String token = Jwts.builder()
                 .claims().add(claims).and()

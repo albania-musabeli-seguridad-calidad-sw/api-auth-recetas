@@ -16,47 +16,46 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(JWTAuthorizationFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-
-        System.out.println("=== JWT FILTER ACTIVADO ===");
-        System.out.println("URL solicitada: " + request.getMethod() + " " + request.getRequestURI());
-        System.out.println("Header Authorization: " + request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY));
-
         String jwtToken = extractJwtFromRequest(request);
-        System.out.println("Token extraído: " + (jwtToken != null ? "SÍ" : "NO"));
+
+        log.debug("JWT FILTER ACTIVADO");
+        log.debug("URL solicitada: {} {} ", request.getMethod(), request.getRequestURI());
+        log.debug("Header Authorization: {} ", request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY));
+        log.debug("Token presente: {}", jwtToken != null ? "SÍ" : "NO");
 
         if (jwtToken != null) {
             boolean valido = validateToken(jwtToken);
-            System.out.println("Token válido: " + valido);
+            log.debug("Token válido: {}", valido);
+
             if (valido) {
                 String username = getUsernameFromToken(jwtToken);
-                System.out.println("Usuario autenticado: " + username);
+                log.debug("Usuario autenticado: {}", username);
             }
         } else {
-            System.out.println("No se encontró token en el header");
+            log.debug("No se encontró token en el header");
         }
-        System.out.println("=====================================");
+        log.debug("=====================================");
 
 
         try {
-            //String jwtToken = extractJwtFromRequest(request);
-
             if (jwtToken != null && validateToken(jwtToken)) {
                 String username = getUsernameFromToken(jwtToken);
                 List<String> authorities = getAuthoritiesFromToken(jwtToken);
 
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         username, null,
-                        authorities.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList())
+                        authorities.stream().map(SimpleGrantedAuthority::new).toList()
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
@@ -68,16 +67,16 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // === EXTRAER TOKEN ===
+    // EXTRAER TOKEN
     private String extractJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY);
         if (bearerToken != null && bearerToken.startsWith(JwtConstants.TOKEN_BEARER_PREFIX)) {
-            return bearerToken.substring(7); // Quita "Bearer "
+            return bearerToken.substring(7); // sin el "Bearer "
         }
         return null;
     }
 
-    // === VALIDAR TOKEN ===
+    // VALIDAR TOKEN
     private boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -90,7 +89,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         }
     }
 
-    // === OBTENER USUARIO ===
+    // OBTENER USUARIO
     private String getUsernameFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith((SecretKey) JwtConstants.getSigningKey(JwtConstants.SUPER_SECRET_KEY))
@@ -101,7 +100,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         return claims.getSubject();
     }
 
-    // === OBTENER ROLES ===
+    // OBTENER ROLES
     private List<String> getAuthoritiesFromToken(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith((SecretKey) JwtConstants.getSigningKey(JwtConstants.SUPER_SECRET_KEY))

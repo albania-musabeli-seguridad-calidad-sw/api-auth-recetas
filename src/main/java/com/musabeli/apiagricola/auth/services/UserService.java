@@ -5,8 +5,11 @@ import com.musabeli.apiagricola.auth.dtos.UserUpdateRequest;
 import com.musabeli.apiagricola.auth.entities.User;
 import com.musabeli.apiagricola.auth.repository.UserRepository;
 import com.musabeli.apiagricola.auth.security.JWTAuthenticationConfig;
+import com.musabeli.apiagricola.exceptions.EmailAlreadyExistsException;
+import com.musabeli.apiagricola.exceptions.ResourceNotFoundException;
+import com.musabeli.apiagricola.exceptions.UnauthorizedActionException;
+import com.musabeli.apiagricola.exceptions.UserAlreadyExistsException;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -20,31 +23,25 @@ import java.util.List;
 @Service
 public class UserService implements UserDetailsService {
 
-//    @Autowired
-//    private UserRepository userRepository;
-//
-//    @Autowired
-//    private JWTAuthenticationConfig jwtConfig;
-
     private final UserRepository userRepository;
     private final JWTAuthenticationConfig jwtConfig;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
 
     public UserService(UserRepository userRepository,
                        JWTAuthenticationConfig jwtConfig) {
         this.userRepository = userRepository;
         this.jwtConfig = jwtConfig;
-        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
 
+    @Transactional
     public String register(String username, String email, String rawPassword) {
         if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Usuario ya existe");
+            throw new UserAlreadyExistsException("El usuario '" + username + "' ya existe");
         }
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email ya registrado");
+            throw new EmailAlreadyExistsException("El email '" + email + "' ya está registrado");
         }
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
@@ -57,7 +54,7 @@ public class UserService implements UserDetailsService {
                 .build();
 
         userRepository.save(user);
-        return "Usuario registrado";
+        return "Usuario registrado correctamente";
     }
 
     public String login(String username, String rawPassword) {
@@ -65,8 +62,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            //throw new RuntimeException("Contraseña incorrecta");
-            throw new BadCredentialsException("Contraseña incorrecta"); // es más especifica al caso
+            throw new BadCredentialsException("Contraseña incorrecta");
         }
 
         return jwtConfig.getJWTToken(username);
@@ -97,7 +93,7 @@ public class UserService implements UserDetailsService {
 
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
         return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
     }
 
@@ -105,34 +101,34 @@ public class UserService implements UserDetailsService {
     @Transactional
     public UserResponse updateUser(Long id, UserUpdateRequest request, String currentUsername) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         
         // Seguridad: solo puede editar su propia cuenta
         if (!user.getUsername().equals(currentUsername)) {
-            throw new RuntimeException("No tienes permiso para modificar este usuario");
+            throw new UnauthorizedActionException("No tienes permiso para modificar este usuario");
         }
-        
+
         if (request.username() != null && !request.username().isBlank()) {
-            if (!request.username().equals(user.getUsername()) &&
-                    userRepository.existsByUsername(request.username())) {
-                throw new RuntimeException("El nombre de usuario ya está en uso");
+            String newUsername = request.username().trim();
+            if (!newUsername.equals(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
+                throw new UserAlreadyExistsException("El nombre de usuario '" + newUsername + "' ya está en uso");
             }
-            user.setUsername(request.username().trim());
+            user.setUsername(newUsername);
         }
-        
+
         if (request.email() != null && !request.email().isBlank()) {
-            if (!request.email().equals(user.getEmail()) &&
-                    userRepository.existsByEmail(request.email())) {
-                throw new RuntimeException("El email ya está registrado");
+            String newEmail = request.email().trim();
+            if (!newEmail.equals(user.getEmail()) && userRepository.existsByEmail(newEmail)) {
+                throw new EmailAlreadyExistsException("El email '" + newEmail + "' ya está registrado");
             }
-            user.setEmail(request.email().trim());
+            user.setEmail(newEmail);
         }
-        
+
         if (request.password() != null && !request.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.password()));
         }
         
-        user = userRepository.save(user);
+        userRepository.save(user);
         return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
     }
 
@@ -140,14 +136,12 @@ public class UserService implements UserDetailsService {
     @Transactional
     public void deleteUser(Long id, String currentUsername) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         if (!user.getUsername().equals(currentUsername)) {
-            throw new RuntimeException("No tiene permiso para eliminar este usuario");
+            throw new UnauthorizedActionException("No tiene permiso para eliminar este usuario");
         }
 
         userRepository.delete(user);
     }
-
-
 }
