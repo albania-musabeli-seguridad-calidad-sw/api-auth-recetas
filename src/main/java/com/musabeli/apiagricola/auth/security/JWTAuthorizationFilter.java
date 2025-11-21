@@ -31,7 +31,9 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
         log.debug("JWT FILTER ACTIVADO");
         log.debug("URL solicitada: {} {} ", request.getMethod(), request.getRequestURI());
-        log.debug("Header Authorization: {} ", request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY));
+        if (log.isDebugEnabled()) {
+            log.debug("Header Authorization: {}", request.getHeader(JwtConstants.HEADER_AUTHORIZACION_KEY));
+        }
         log.debug("Token presente: {}", jwtToken != null ? "SÍ" : "NO");
 
         if (jwtToken != null) {
